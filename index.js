@@ -1,9 +1,13 @@
 const express=require('express')
 const app = express()
 const bodyParser = require('body-parser')
-  var fs = require("fs");
-//app.use(bodyParser.json())
-const persons=[
+const morgan=require('morgan')
+
+//using of morgan for logging
+//:method :url :status :res[content-length] - :response-time ms
+app.use(morgan('tiny'))  
+app.use(bodyParser.json())
+let persons=[
     {
       "name": "Arto Hellas",
       "number": "040-123456",
@@ -49,13 +53,9 @@ const persons=[
 
 
 app.get('/info', function (req, res) {
-   
       const date=new Date()
       res.end(`Phonebook has info for ${persons.length} people \n ${date}`);
    })
-
-
-
 
 app.get('/', (req, res) => {
   res.send('<h1>Hello World! from backend</h1>')
@@ -63,7 +63,7 @@ app.get('/', (req, res) => {
 
 //get all person 
 app.get('/api/person',(req,res)=>{
-res.json(persons)
+    res.json(persons)
 })
 
 //get one person by id if it is found
@@ -82,6 +82,46 @@ app.delete('/api/person/:id',(req,res)=>{
    persons=persons.filter(per=>per.id !==id)
     res.status(204).end()
 })
+
+const generateId = () => {
+	
+  let maxId = 0;
+     maxId=Math.floor((Math.random()*99)+1)
+  let person=persons.find(per=>per.id===maxId)
+ 
+  if(person)
+    return generateId()
+  else
+	  return maxId
+}
+app.post('/api/person',(req,res) => {
+       const body=req.body
+    if(!body.number||!body.name)
+    {
+           return res.status(400).json({ 
+      error: 'name or number missing'
+    })}
+    let name=String(req.body.name)
+    
+    const isPers=persons.find(pers=>pers.name===name)
+     if(isPers)
+     {
+       return res.status(400).json({ 
+      error: 'name must be unique' 
+    })}
+    const pers={
+      name:body.name,
+      number:body.number,
+      id:generateId()
+    }
+    persons=persons.concat(pers)
+     res.json(pers)
+})
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
 
 const PORT = 3001
 app.listen(PORT, () => {
