@@ -1,11 +1,11 @@
 const express=require('express')
 const app = express()
 const bodyParser = require('body-parser')
-const morgan=require('morgan')
+//const morgan=require('morgan')
 const cors=require('cors')
 //using of morgan for logging
 //:method :url :status :res[content-length] - :response-time ms
-app.use(morgan('tiny'))  
+//app.use(morgan('tiny'))  
 app.use(bodyParser.json())
 app.use(cors())
 app.use(express.static('build'))
