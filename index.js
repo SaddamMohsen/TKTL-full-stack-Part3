@@ -1,8 +1,11 @@
+require('dotenv').config()
 const express=require('express')
 const app = express()
 const bodyParser = require('body-parser')
-app.use(bodyParser.json())
+
+const Person =require('./models/person')
 const cors = require('cors')
+
 const requestLogger = (request, response, next) => {
   console.log('Method:', request.method)
   console.log('Path:  ', request.path)
@@ -10,99 +13,59 @@ const requestLogger = (request, response, next) => {
   console.log('---')
   next()
 }
-
-app.use(requestLogger)
-
-
 app.use(cors())
 app.use(express.static('build'))
-let persons=[
-    {
-      "name": "Arto Hellas",
-      "number": "040-123456",
-      "id": 1
-    },
-    {
-      "name": "Dan Abramov",
-      "number": "12-43-234345",
-      "id": 3
-    },
-    {
-      "name": "Mary Poppendieck",
-      "number": "39-23-6423122",
-      "id": 4
-    },
-    {
-      "name": "Saddam Hussein",
-      "number": "77-72-07896",
-      "id": 5
-    },
-    {
-      "name": "Ahmed Saleh",
-      "number": "22-23-44326",
-      "id": 8
-    },
-    {
-      "name": "DanJson",
-      "number": "222-33-4323",
-      "id": 7
-    },
-    {
-      "name": "Ali Saleh",
-      "number": "323-22-48953",
-      "id": 10
-    },
-    {
-      "name": "Ahmed Ali",
-      "number": "223-456-2134",
-      "id": 11
-    }
-  ]
-  
+app.use(bodyParser.json())
+app.use(requestLogger)
+//var MongoClient = require('mongodb').MongoClient
+//var mongoUrl = process.env.MONGODB_URI;
 
-
+//get number of inputs in database
 app.get('/info', function (req, res) {
       const date=new Date()
-      res.end(`Phonebook has info for ${persons.length} people \n ${date}`);
+	   Person.countDocuments({},(error, numOfDocs)=>{
+            if (error) throw error;
+            count = numOfDocs;
+            console.log("count is : " + count);
+           res.end(`Phonebook has info for ${count} people \n ${date}`);
+          });// end of count   
    })
 
 app.get('/', (req, res) => {
-  res.send('<h1>Hello World! from backend</h1>')
+   Person.find({}).then(notes => {
+    response.json(notes.map(note => note.toJSON()))
+  })
+  mongoose.connection.close()
 })
 
 //get all person 
 app.get('/api/person',(req,res)=>{
-    res.json(persons)
+	Person.find({}).then(persons=>{
+		   res.json(persons.map(per=>per.toJSON()))
+	})
 })
 
 //get one person by id if it is found
-app.get('/api/person/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const pers = persons.find(p => p.id === id)
-  if (pers) {
-    response.json(pers)
-  } else {
-    response.status(404).end()
-  }
+app.get('/api/person/:id', (request, response,next) => {
+	//console.log(request.params.id)
+	Person.findById(request.params.id).then(pers => {
+    response.json(pers.toJSON())
+	//mongoose.connection.close()
+  })
+   .catch(err=>{
+	    next(err)
+   })
+}) 
+
+//delete from the phonebook
+ app.delete('/api/person/:id',(req,res)=>{
+  Person.findByIdAndRemove(req.params.id).then(result => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
 })
 
-app.delete('/api/person/:id',(req,res)=>{
-  const id =Number(req.params.id)
-   persons=persons.filter(per=>per.id !==id)
-    res.status(204).end()
-})
-
-const generateId = () => {
-	
-  let maxId = 0;
-     maxId=Math.floor((Math.random()*99)+1)
-  let person=persons.find(per=>per.id===maxId)
- 
-  if(person)
-    return generateId()
-  else
-	  return maxId
-}
+//post new person into the database
 app.post('/api/person',(req,res) => {
        const body=req.body
     if(!body.number||!body.name)
@@ -110,29 +73,50 @@ app.post('/api/person',(req,res) => {
            return res.status(400).json({ 
       error: 'name or number missing'
     })}
-    let name=String(req.body.name)
-    
-    const isPers=persons.find(pers=>pers.name===name)
-     if(isPers)
-     {
-       return res.status(400).json({ 
-      error: 'name must be unique' 
-    })}
-    const pers={
+  
+    const pers=new Person({
       name:body.name,
-      number:body.number,
-      id:generateId()
-    }
-    persons=persons.concat(pers)
-     res.json(pers)
+      number:body.number
+    })
+	pers.save().then(savedPers=>{
+     res.json(savedPers.toJSON())
+	})
 })
+
+//updated number
+app.put('/api/person/:id',(req,res,next)=>{
+	const body=req.body;
+	const per={
+		name :body.name,
+	number:body.number
+	}
+	Person.findByIdAndUpdate(req.params.id,per,{new:true})
+	     .then(updateper=>{ 
+		 
+		 res.json(updateper.toJSON())
+		 })
+		  .catch(err=>next(err))
+	})
+	//Handler for unknownEndpoint get
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
 }
 
 app.use(unknownEndpoint)
 
-const PORT = process.env.PORT ||3001 
+//middleware to handling error
+const errorHandler=(error,request,response,next)=>{
+	console.error(error.message)
+
+  if (error.name === 'CastError' && error.kind === 'ObjectId') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+
+  next(error)
+}
+app.use(errorHandler)
+
+const PORT = process.env.PORT||3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
