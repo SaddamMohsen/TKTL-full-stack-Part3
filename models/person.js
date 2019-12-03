@@ -1,12 +1,12 @@
 const mongoose = require('mongoose')
-const url=process.env.MONGODB_URI;
-
+//const url=process.env.MONGODB_URI;
+const url='mongodb+srv://saddam:sad12345@ascapcluster-nhfu8.mongodb.net/test?retryWrites=true&w=majority'
 mongoose.set('useFindAndModify', false)
 console.log('connecting to',url)
 mongoose.connect(url,{useNewUrlParser:true,useUnifiedTopology:true}).then(result => {   
           console.log('connected to MongoDB')})
 		  .catch((error) => {   
-  		     console.log('error connecting to MongoDB:', error.message) 
+  		     console.log('error connecting to MongoDB:', error.message)
 			 }) 
 const personSchema = new mongoose.Schema({
   name: String,
