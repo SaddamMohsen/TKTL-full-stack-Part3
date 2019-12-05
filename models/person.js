@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+var uniqueValidator = require('mongoose-unique-validator')
 //const url=process.env.MONGODB_URI;
 const url='mongodb+srv://saddam:sad12345@ascapcluster-nhfu8.mongodb.net/test?retryWrites=true&w=majority'
 mongoose.set('useFindAndModify', false)
@@ -9,9 +10,21 @@ mongoose.connect(url,{useNewUrlParser:true,useUnifiedTopology:true}).then(result
   		     console.log('error connecting to MongoDB:', error.message)
 			 }) 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: Number,
+  name:{
+   type:String,
+  minlength:3,
+  required:true,
+  unique:true
+  },
+  number:{
+    type:Number,
+	minlength:8,
+	required:true
+  }
 })
+// Apply the uniqueValidator plugin to userSchema.
+personSchema.plugin(uniqueValidator);
+
 personSchema.set('toJSON',{
 	    transform: (document, returnedObject) => {
     returnedObject.id = returnedObject._id.toString()

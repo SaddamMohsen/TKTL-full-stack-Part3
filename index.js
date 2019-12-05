@@ -66,7 +66,7 @@ app.get('/api/person/:id', (request, response,next) => {
 })
 
 //post new person into the database
-app.post('/api/person',(req,res) => {
+app.post('/api/person',(req,res,next) => {
        const body=req.body
     if(!body.number||!body.name)
     {
@@ -78,9 +78,11 @@ app.post('/api/person',(req,res) => {
       name:body.name,
       number:body.number
     })
-	pers.save().then(savedPers=>{
-     res.json(savedPers.toJSON())
+	pers.save()
+	   .then(savedPers=>{
+        res.json(savedPers.toJSON())
 	})
+	.catch(err=> next(err))
 })
 
 //updated number
@@ -110,13 +112,14 @@ const errorHandler=(error,request,response,next)=>{
 
   if (error.name === 'CastError' && error.kind === 'ObjectId') {
     return response.status(400).send({ error: 'malformatted id' })
-  } 
-
+  }else if (error.name === 'ValidationError') {  
+    return response.status(400).json({ error: error.message }) 
+  }
   next(error)
 }
 app.use(errorHandler)
 
-const PORT = process.env.PORT
+const PORT = process.env.PORT||3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
