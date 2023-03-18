@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 var uniqueValidator = require('mongoose-unique-validator')
 //const url=process.env.MONGODB_URI;
-const url='mongodb+srv://saddam:sad12345@ascapcluster-nhfu8.mongodb.net/test?retryWrites=true&w=majority'
+const url='mongodb+srv://saddam:saddam:wmgkosdj!#Sad1990@ascapcluster-nhfu8.mongodb.net/test?retryWrites=true&w=majority'
 mongoose.set('useFindAndModify', false)
 console.log('connecting to',url)
 mongoose.connect(url,{useNewUrlParser:true,useUnifiedTopology:true}).then(result => {   
